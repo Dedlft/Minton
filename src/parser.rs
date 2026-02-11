@@ -1,7 +1,7 @@
 use crate::lexer::{Lexer, Token};
 use crate::ast::{Expr, Stmt, Program};
 
-#[derive(PartialEq, partialOrd)]
+#[derive(Debug, PartialEq, PartialOrd)]
 enum Precedence {
 	Lowest,
 	Pipe,
@@ -53,20 +53,23 @@ impl Parser {
     }
 
     fn parse_statement(&mut self) -> Option<Stmt> {
-        let expr = self.parse_expression(Precedence::Lowest);
+        let expr = self.parse_expression(Precedence::Lowest)?;
         if self.peek_token == Token::Semicolon {
             self.next_token();
         }
-        expr.map(Stmt::Expression)
+        Some(Stmt::Expression(expr))
     }
     
     fn parse_grouped_expression(&mut self) -> Option<Expr> {
 		self.next_token();
-		let expr = self.parse_expression(Precedence::Lowest);
-		if self.cur_token == Token::Rparen {
+		let expr = self.parse_expression(Precedence::Lowest)?;
+		if self.peek_token == Token::Rparen {
 			self.next_token();
+			self.next_token();
+			Some(expr)
+		} else {
+			None
 		}
-		expr
 	}
 	
 	fn parse_binary_expression(&mut self, left: Expr) -> Option<Expr> {
@@ -92,12 +95,14 @@ impl Parser {
         let mut left = match &self.cur_token {
 			Token::Int(val) => Some(Expr::Integer(*val)),
             Token::String(s) => Some(Expr::Literal(s.clone())),
-            Token::Identifier(i) => Expr::Identifier(i.clone()),
+            Token::Identifier(i) => Some(Expr::Identifier(i.clone())),
             Token::Lparen => self.parse_grouped_expression(),
             _ => return None,
         }?;
         
-        while self.peek_token != Token::Semicolon && precedence < get_precedence(&self.peek_token) {
+        self.next_token();
+        
+        while self.cur_token != Token::Semicolon && self.cur_token != Token::EOF && precedence < Self::get_precedence(&self.peek_token) {
 			match self.peek_token {
 				Token::Plus | Token::Minus | Token::Asterisk | Token::Slash => {
 					self.next_token();
@@ -109,7 +114,7 @@ impl Parser {
 					let right = self.parse_expression(Precedence::Pipe)?;
 					left = Expr::Pipeline {
 						left: Box::new(left),
-						right: Box::new(right);,
+						right: Box::new(right),
 					};
 				}
 				_ => break,

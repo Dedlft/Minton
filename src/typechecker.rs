@@ -33,7 +33,7 @@ impl TypeChecker {
 			}
 			Expr::Identifier(name) => {
 				if name == "print" {
-					Ok(MintonType::Void)
+					Err(format!("Undefined identifier: {}", name))
 				} else {
 					Err(format!("Undefined identifier: {}", name))
 				  }

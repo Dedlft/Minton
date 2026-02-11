@@ -22,7 +22,7 @@ impl Evaluator {
         }
     }
 
-    fn eval_expression(&mut self, expr: Expr) -> Value {
+    pub fn eval_expression(&mut self, expr: Expr) -> Value {
         match expr {
 			Expr::Integer(v) => Value::Int(v),
             Expr::Literal(s) => Value::Str(s),
@@ -50,7 +50,7 @@ impl Evaluator {
         }
     }
 
-    fn execute_pipeline(&mut self, input: Value, action: Expr) -> Value {
+    pub fn execute_pipeline(&mut self, input: Value, action: Expr) -> Value {
         if let Expr::Identifier(name) = action {
 			if name == "print" {
 				match input {
